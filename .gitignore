@@ -1,0 +1,10 @@
+# dependencies
+.gradle
+
+.idea
+
+# misc
+build/*
+run/
+src/main/resources/WEsecrets.json
+logs

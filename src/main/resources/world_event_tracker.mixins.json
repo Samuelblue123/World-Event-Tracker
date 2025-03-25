@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.wet.world_event_tracker.mc.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ChatScreenMixin",
+    "ClientPacketListenerMixin",
+    "accessors.ChatHudAccessorInvoker"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

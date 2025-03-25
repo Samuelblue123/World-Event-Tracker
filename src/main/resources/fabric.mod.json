@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "world_event_tracker",
+  "version": "1.1+1.21.4",
+  "name": "World Event Tracker",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/world_event_tracker/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.wet.world_event_tracker.World_event_tracker"
+    ]
+  },
+  "mixins": [
+    "world_event_tracker.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
