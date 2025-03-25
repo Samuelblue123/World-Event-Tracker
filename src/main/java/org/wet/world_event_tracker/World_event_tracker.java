@@ -215,35 +215,40 @@ public class World_event_tracker implements ClientModInitializer {
 
                                 JsonObject requestBody = new JsonObject();
                                 try {
-                                    String response = NetManager.HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString()).body();
-                                    String updatedList="";
-                                    if (!response.isEmpty() && response.startsWith("[")) {
-                                        updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
-                                    }
-                                    World_event_tracker.LOGGER.info(response);
-                                    requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
-                                    requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                    NetManager.HTTP_CLIENT.sendAsync(getRequest, HttpResponse.BodyHandlers.ofString())
+                                            .whenCompleteAsync((res, throwable) -> {
+                                                String updatedList="";
+                                                String response=res.body();
+                                                if (!response.isEmpty() && response.startsWith("[")) {
+                                                    updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
+                                                }
+                                                World_event_tracker.LOGGER.info(response);
+                                                requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
+                                                requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                                HttpRequest putRequest = HttpRequest.newBuilder()
+                                                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/ut"))
+                                                        .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
+                                                        .header("Content-Type", "application/json")
+                                                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                                                        .build();
+
+                                                NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
+                                                        .whenCompleteAsync((res1, throwable1) -> {
+                                                            try {
+                                                                NetUtils.applyDefaultCallback(res1, throwable1,
+                                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully unregistered from the event."), Prepend.DEFAULT.get(), false),
+                                                                        (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were not registered for that event."), Prepend.DEFAULT.get(), false));
+                                                            } catch (Exception e) {
+                                                                throw new RuntimeException(e);
+                                                            }
+                                                        });
+                                            });
+
                                 } catch (Exception e) {
                                     throw new RuntimeException("Failed to fetch or modify world event list", e);
                                 }
 
-                                HttpRequest putRequest = HttpRequest.newBuilder()
-                                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/ut"))
-                                        .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
-                                        .header("Content-Type", "application/json")
-                                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                                        .build();
 
-                                NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
-                                        .whenCompleteAsync((res, throwable) -> {
-                                            try {
-                                                NetUtils.applyDefaultCallback(res, throwable,
-                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully unregistered from the event."), Prepend.DEFAULT.get(), false),
-                                                        (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were not registered for that event."), Prepend.DEFAULT.get(), false));
-                                            } catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
 
                                 return Command.SINGLE_SUCCESS;
                             }))));
@@ -300,45 +305,47 @@ public class World_event_tracker implements ClientModInitializer {
 
                                 JsonObject requestBody = new JsonObject();
                                 try {
-                                    String response = NetManager.HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString()).body();
-                                    String updatedList;
-                                    if (!response.isEmpty() && response.startsWith("[") && !response.equals("[]")) {
-                                        updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
-                                    } else {
-                                        updatedList = "[\"" + event + "\"]";
-                                    }
-                                    requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
-                                    requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                    NetManager.HTTP_CLIENT.sendAsync(getRequest, HttpResponse.BodyHandlers.ofString()).whenCompleteAsync((stringHttpResponse, throwable) -> {
+                                        String response = stringHttpResponse.body();
+                                        String updatedList;
+                                        if (!response.isEmpty() && response.startsWith("[") && !response.equals("[]")) {
+                                            updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
+                                        } else {
+                                            updatedList = "[\"" + event + "\"]";
+                                        }
+                                        requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
+                                        requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                        // Send update
+                                        HttpRequest putRequest = HttpRequest.newBuilder()
+                                                .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user"))
+                                                .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
+                                                .header("Content-Type", "application/json")
+                                                .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                                                .build();
+
+                                        NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
+                                                .whenCompleteAsync((res, throwable1) -> {
+                                                    try {
+                                                        NetUtils.applyDefaultCallback(res, throwable1,
+                                                                (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for the event."), Prepend.DEFAULT.get(), false),
+                                                                (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were already registered for that event."), Prepend.DEFAULT.get(), false));
+                                                    } catch (Exception e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                });
+                                    });
+
                                 } catch (Exception e) {
                                     throw new RuntimeException("Failed to fetch world event list", e);
                                 }
 
-                                // Send update
-                                HttpRequest putRequest = HttpRequest.newBuilder()
-                                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user"))
-                                        .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
-                                        .header("Content-Type", "application/json")
-                                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                                        .build();
 
-                                NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
-                                        .whenCompleteAsync((res, throwable) -> {
-                                            try {
-                                                NetUtils.applyDefaultCallback(res, throwable,
-                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for the event."), Prepend.DEFAULT.get(), false),
-                                                        (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were already registered for that event."), Prepend.DEFAULT.get(), false));
-                                            } catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
 
                                 return Command.SINGLE_SUCCESS;
                             }))));
 
             // Suggestion provider
-            SuggestionProvider worldEventSuggestions = (context, builder) -> {
-                return CommandSource.suggestMatching(allowedEvents, builder);
-            };
+            SuggestionProvider worldEventSuggestions = (context, builder) -> CommandSource.suggestMatching(allowedEvents, builder);
 
             // Register track command
             LiteralArgumentBuilder<FabricClientCommandSource> trackCommand = ClientCommandManager.literal("track")
@@ -347,7 +354,16 @@ public class World_event_tracker implements ClientModInitializer {
                             .executes(context -> {
                                 String event = StringArgumentType.getString(context, "world_event");
                                 String uuid = Managers.Net.wynn.wynnPlayerInfo.get("uuid").getAsString();
-
+                                boolean valid = false;
+                                for(String currentevent:allowedEvents){
+                                    if(event.equals(currentevent)){
+                                        valid = true;
+                                    }
+                                }
+                                if(!valid){
+                                    McUtils.sendLocalMessage(Text.literal("§cInvalid event."), Prepend.DEFAULT.get(), false);
+                                    return Command.SINGLE_SUCCESS;
+                                }
                                 // Fetch existing tracked events
                                 HttpRequest getRequest = HttpRequest.newBuilder()
                                         .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/wes"))
@@ -358,37 +374,41 @@ public class World_event_tracker implements ClientModInitializer {
 
                                 JsonObject requestBody = new JsonObject();
                                 try {
-                                    String response = NetManager.HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString()).body();
-                                    String updatedList;
-                                    if (!response.isEmpty() && response.startsWith("[")) {
-                                        updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
-                                    } else {
-                                        updatedList = "[\"" + event + "\"]";
-                                    }
-                                    requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
-                                    requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                    NetManager.HTTP_CLIENT.sendAsync(getRequest, HttpResponse.BodyHandlers.ofString()).whenCompleteAsync((res, throwable) -> {
+                                        String response=res.body();
+                                        String updatedList;
+                                        if (!response.isEmpty() && response.startsWith("[")&&!response.equals("[]")) {
+                                            updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
+                                        } else {
+                                            updatedList = "[\"" + event + "\"]";
+                                        }
+                                        requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
+                                        requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                        // Send update
+                                        HttpRequest putRequest = HttpRequest.newBuilder()
+                                                .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user"))
+                                                .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
+                                                .header("Content-Type", "application/json")
+                                                .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                                                .build();
+
+                                        NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
+                                                .whenCompleteAsync((res1, throwable1) -> {
+                                                    try {
+                                                        NetUtils.applyDefaultCallback(res1, throwable1,
+                                                                (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for the event."), Prepend.DEFAULT.get(), false),
+                                                                (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were already registered for that event."), Prepend.DEFAULT.get(), false));
+                                                    } catch (Exception e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                });
+                                    });
+
                                 } catch (Exception e) {
                                     throw new RuntimeException("Failed to fetch world event list", e);
                                 }
 
-                                // Send update
-                                HttpRequest putRequest = HttpRequest.newBuilder()
-                                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user"))
-                                        .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
-                                        .header("Content-Type", "application/json")
-                                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                                        .build();
 
-                                NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
-                                        .whenCompleteAsync((res, throwable) -> {
-                                            try {
-                                                NetUtils.applyDefaultCallback(res, throwable,
-                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for the event."), Prepend.DEFAULT.get(), false),
-                                                        (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were already registered for that event."), Prepend.DEFAULT.get(), false));
-                                            } catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
 
                                 return Command.SINGLE_SUCCESS;
                             }));
@@ -400,7 +420,16 @@ public class World_event_tracker implements ClientModInitializer {
                             .executes(context -> {
                                 String event = StringArgumentType.getString(context, "world_event");
                                 String uuid = Managers.Net.wynn.wynnPlayerInfo.get("uuid").getAsString();
-                                World_event_tracker.LOGGER.info(event);
+                                boolean valid = false;
+                                for(String currentevent:allowedEvents){
+                                    if(event.equals(currentevent)){
+                                        valid = true;
+                                    }
+                                }
+                                if(!valid){
+                                    McUtils.sendLocalMessage(Text.literal("§cInvalid event."), Prepend.DEFAULT.get(), false);
+                                    return Command.SINGLE_SUCCESS;
+                                }
                                 HttpRequest getRequest = HttpRequest.newBuilder()
                                         .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/wes"))
                                         .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
@@ -411,35 +440,39 @@ public class World_event_tracker implements ClientModInitializer {
 
                                 JsonObject requestBody = new JsonObject();
                                 try {
-                                    String response = NetManager.HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString()).body();
-                                    String updatedList="";
-                                    if (!response.isEmpty() && response.startsWith("[")) {
-                                        updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
-                                    }
-                                    World_event_tracker.LOGGER.info(response);
-                                    requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
-                                    requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+                                    NetManager.HTTP_CLIENT.sendAsync(getRequest, HttpResponse.BodyHandlers.ofString()).whenCompleteAsync((stringHttpResponse, throwable) -> {
+                                        String response=stringHttpResponse.body();
+                                        String updatedList="";
+                                        if (!response.isEmpty() && response.startsWith("[")) {
+                                            updatedList = response.replaceAll("\\s", "").replace("]", "") + ",\"" + event + "\"]";
+                                        }
+                                        World_event_tracker.LOGGER.info(response);
+                                        requestBody.add("uuid", JsonUtils.toJsonElement(uuid));
+                                        requestBody.add("worldevents", JsonUtils.toJsonElement(updatedList));
+
+                                        HttpRequest putRequest = HttpRequest.newBuilder()
+                                                .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/ut"))
+                                                .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
+                                                .header("Content-Type", "application/json")
+                                                .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                                                .build();
+
+                                        NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
+                                                .whenCompleteAsync((res, throwable1) -> {
+                                                    try {
+                                                        NetUtils.applyDefaultCallback(res, throwable1,
+                                                                (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully unregistered from the event."), Prepend.DEFAULT.get(), false),
+                                                                (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were not registered for that event."), Prepend.DEFAULT.get(), false));
+                                                    } catch (Exception e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                });
+
+                                    });
+
                                 } catch (Exception e) {
                                     throw new RuntimeException("Failed to fetch or modify world event list", e);
                                 }
-
-                                HttpRequest putRequest = HttpRequest.newBuilder()
-                                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString() + "api/v2/user/ut"))
-                                        .header("authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
-                                        .header("Content-Type", "application/json")
-                                        .PUT(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                                        .build();
-
-                                NetManager.HTTP_CLIENT.sendAsync(putRequest, HttpResponse.BodyHandlers.ofString())
-                                        .whenCompleteAsync((res, throwable) -> {
-                                            try {
-                                                NetUtils.applyDefaultCallback(res, throwable,
-                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully unregistered from the event."), Prepend.DEFAULT.get(), false),
-                                                        (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were not registered for that event."), Prepend.DEFAULT.get(), false));
-                                            } catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
 
                                 return Command.SINGLE_SUCCESS;
                             }));
