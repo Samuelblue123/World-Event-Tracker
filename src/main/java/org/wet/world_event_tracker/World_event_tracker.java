@@ -235,7 +235,7 @@ public class World_event_tracker implements ClientModInitializer {
                                                         .whenCompleteAsync((res1, throwable1) -> {
                                                             try {
                                                                 NetUtils.applyDefaultCallback(res1, throwable1,
-                                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully unregistered from the event."), Prepend.DEFAULT.get(), false),
+                                                                        (ok) -> McUtils.sendLocalMessage(Text.literal("§aSuccessfully deregistered from the event."), Prepend.DEFAULT.get(), false),
                                                                         (err) -> McUtils.sendLocalMessage(Text.literal("§cYou were not registered for that event."), Prepend.DEFAULT.get(), false));
                                                             } catch (Exception e) {
                                                                 throw new RuntimeException(e);
