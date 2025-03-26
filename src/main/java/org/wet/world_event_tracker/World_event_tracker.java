@@ -41,7 +41,6 @@ import java.net.http.HttpResponse;
 
 
 public class World_event_tracker implements ClientModInitializer {
-    public static JsonUtils jsonUtils = new JsonUtils();
     public static final String MOD_ID = "world_event_tracker";
     public static final String MOD_STORAGE_ROOT = "weTracker";
     public static final Logger LOGGER = LoggerFactory.getLogger("weTracker");

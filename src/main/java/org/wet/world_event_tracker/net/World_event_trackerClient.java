@@ -63,7 +63,7 @@ public class World_event_trackerClient extends Api {
                 requestBody.add("validationKey", validationKey);
                 requestBody.add("username", JsonUtils.toJsonElement(McUtils.playerName()));
                 HttpRequest.Builder builder = HttpRequest.newBuilder()
-                        .uri(URI.create(baseURL + apiBasePath + "guilds/auth/get-token/" + uuid))
+                        .uri(URI.create(World_event_tracker.secrets.get("url") + apiBasePath + "guilds/auth/get-token/" + uuid))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()));
                 if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -107,7 +107,7 @@ public class World_event_trackerClient extends Api {
                     .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)), Prepend.DEFAULT.get(), false);
             return out;
         }
-        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(baseURL + path))
+        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(World_event_tracker.secrets.get("url") + path))
                 .header("Authorization", "bearer " + World_event_tracker.secrets.get("password").getAsString())
                 .GET();
         if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -139,7 +139,7 @@ public class World_event_trackerClient extends Api {
             return out;
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(baseURL + path))
+                .uri(URI.create(World_event_tracker.secrets.get("url") + path))
                 .headers("Content-Type", "application/json", "Authorization",
                         "bearer " + token)
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
@@ -162,7 +162,7 @@ public class World_event_trackerClient extends Api {
             return out;
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(baseURL + path))
+                .uri(URI.create(World_event_tracker.secrets.get("url") + path))
                 .header("Authorization", "bearer " + token)
                 .DELETE();
         if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -206,10 +206,7 @@ public class World_event_trackerClient extends Api {
         McUtils.sendLocalMessage(successMessage, Prepend.DEFAULT.get(), false);
     }
 
-
-    public String getBaseURL() {
-        return baseURL;
-    }
+    
 
     @Override
     public void init() {
@@ -232,7 +229,6 @@ public class World_event_trackerClient extends Api {
                     .whenCompleteAsync((response, error) -> {
                         try {
                             NetUtils.applyDefaultCallback(response, error, (resOK) -> {
-                                baseURL = World_event_tracker.isDevelopment() ? "http://localhost:3000/":"https://we-server-c7yu.onrender.com/";
                                 World_event_tracker.LOGGER.info("successfully loaded base url");
                                 super.enable();
                             }, (e) -> {
@@ -277,7 +273,6 @@ public class World_event_trackerClient extends Api {
         validationKey = null;
         wynnPlayerInfo = null;
         uuid = null;
-        baseURL = null;
         token = null;
         super.unready();
     }

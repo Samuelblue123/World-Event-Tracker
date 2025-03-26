@@ -97,7 +97,7 @@ public class SocketIOClient extends Api {
         if (reloadSocket) {
             firstConnect = true;
             options.extraHeaders.put("Authorization", Collections.singletonList("Bearer " + World_event_tracker.secrets.get("password").getAsString()));
-            serverSocket = IO.socket(URI.create(user.getBaseURL()+"?"+queryString), options);
+            serverSocket = IO.socket(URI.create(World_event_tracker.secrets.get("url")+"?"+queryString), options);
 
             for (Pair<String, Consumer<Object[]>> listener : listeners) {
                 registerServerListener(listener.getLeft(), listener.getRight());

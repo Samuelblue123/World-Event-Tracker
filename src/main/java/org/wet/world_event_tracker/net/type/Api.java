@@ -8,7 +8,6 @@ import java.util.List;
 public abstract class Api {
     public final String name;
     private final List<Class<? extends Api>> dependencies;
-    protected String baseURL;
     private boolean enabled = false;
     private int missingDeps;
 
