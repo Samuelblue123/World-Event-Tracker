@@ -72,7 +72,6 @@ public class World_event_tracker implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         development = FabricLoader.getInstance().isDevelopmentEnvironment();
-        World_event_tracker.LOGGER.info(""+development);
         if (FabricLoader.getInstance().getModContainer(MOD_ID).isPresent()) {
             MOD_CONTAINER = FabricLoader.getInstance().getModContainer(MOD_ID).get();
             MOD_VERSION = MOD_CONTAINER.getMetadata().getVersion().getFriendlyString();
