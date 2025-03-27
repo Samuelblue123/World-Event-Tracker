@@ -63,7 +63,7 @@ public class World_event_trackerClient extends Api {
                 requestBody.add("validationKey", validationKey);
                 requestBody.add("username", JsonUtils.toJsonElement(McUtils.playerName()));
                 HttpRequest.Builder builder = HttpRequest.newBuilder()
-                        .uri(URI.create(World_event_tracker.secrets.get("url") + apiBasePath + "guilds/auth/get-token/" + uuid))
+                        .uri(URI.create(World_event_tracker.secrets.get("url").getAsString()+ apiBasePath + "guilds/auth/get-token/" + uuid))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()));
                 if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -107,7 +107,7 @@ public class World_event_trackerClient extends Api {
                     .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)), Prepend.DEFAULT.get(), false);
             return out;
         }
-        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(World_event_tracker.secrets.get("url") + path))
+        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(World_event_tracker.secrets.get("url").getAsString()+ path))
                 .header("Authorization", "bearer " + World_event_tracker.secrets.get("password").getAsString())
                 .GET();
         if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -139,7 +139,7 @@ public class World_event_trackerClient extends Api {
             return out;
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(World_event_tracker.secrets.get("url") + path))
+                .uri(URI.create(World_event_tracker.secrets.get("url").getAsString()+ path))
                 .headers("Content-Type", "application/json", "Authorization",
                         "bearer " + token)
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
@@ -162,7 +162,7 @@ public class World_event_trackerClient extends Api {
             return out;
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(World_event_tracker.secrets.get("url") + path))
+                .uri(URI.create(World_event_tracker.secrets.get("url").getAsString()+ path))
                 .header("Authorization", "bearer " + token)
                 .DELETE();
         if (World_event_tracker.isDevelopment()) builder.version(HttpClient.Version.HTTP_1_1);
@@ -223,7 +223,7 @@ public class World_event_trackerClient extends Api {
                     .header("Authorization", "Bearer " + World_event_tracker.secrets.get("password").getAsString())
                     .header("uuid", uuid)
                     .GET()
-//                    .version(HttpClient.Version.HTTP_1_1) //remove this in final version
+                    .version(HttpClient.Version.HTTP_1_1) //remove this in final version
                     .build();
             NetManager.HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .whenCompleteAsync((response, error) -> {

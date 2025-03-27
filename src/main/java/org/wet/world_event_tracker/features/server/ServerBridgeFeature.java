@@ -94,7 +94,11 @@ public class ServerBridgeFeature extends Feature {
 
     private void onWynnMessage(Text message) {
         String m = TextUtils.parseStyled(message, TextParseOptions.DEFAULT.withExtractUsernames(true));
-        if (World_event_tracker.isDevelopment()) m = m.replaceAll("&", "§");
+        if (World_event_tracker.isDevelopment()){
+            m = m.replaceFirst("&", "§");
+            m = m.replaceFirst("&", "§");
+            m = m.replaceFirst("&", "§");
+        }
         World_event_tracker.LOGGER.info("received: {}", m);
         Matcher weMatcher = WE_PATTERN.matcher(m);
         if (!m.contains("\uE003") && weMatcher.find()) {
