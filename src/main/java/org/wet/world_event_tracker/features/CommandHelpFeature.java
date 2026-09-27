@@ -28,6 +28,10 @@ public class CommandHelpFeature extends Feature {
             new Pair<>("/wet untrack <World Event>", "Untracks the specified world event."),
             new Pair<>("/wet list", "Lists all tracked world events."),
 
+            new Pair<>("\n", "Settings Commands:"),
+
+            new Pair<>("/wet toggle <Setting>", "Toggles the specified setting"),
+
             new Pair<>("\n","Self-Shoutout"),
             new Pair<>("Made by Opus Maximus.","If you enjoy the mod, consider joining the guild!")
 
