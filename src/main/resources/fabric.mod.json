@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "world_event_tracker",
-  "version": "2.0+1.21.11",
+  "version": "2.1+1.21.11",
   "name": "World Event Tracker",
   "description": "",
   "authors": [],
