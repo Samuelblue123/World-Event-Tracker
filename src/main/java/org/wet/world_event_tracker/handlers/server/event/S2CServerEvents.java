@@ -15,10 +15,13 @@ public class S2CServerEvents {
     public static Event<Message> MESSAGE = EventFactory.createArrayBacked(Message.class, (listeners) -> (message) -> {
         for (Message listener : listeners) {
             try {
-                String events = fileUtils.readFile(World_event_tracker.list);
+                String events = fileUtils.readFile(World_event_tracker.configFile);
                 String[] splitMessage = message.toString().split(":");
                 String[] messageParts = splitMessage[0].split(" ");
                 String event = "";
+                if (splitMessage[1].toString().contains("§")){
+                        splitMessage[1] = splitMessage[1].toString().replace("§0§0", " ");
+                }
                 for (String part : messageParts) {
                     event += part;
                 }

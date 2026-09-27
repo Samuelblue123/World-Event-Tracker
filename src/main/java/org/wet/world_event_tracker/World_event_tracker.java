@@ -1,9 +1,6 @@
 package org.wet.world_event_tracker;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -24,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.wet.world_event_tracker.components.Handlers;
 import org.wet.world_event_tracker.components.Managers;
 import org.wet.world_event_tracker.components.Models;
-import org.wet.world_event_tracker.handlers.chat.event.ChatMessageInit;
 import org.wet.world_event_tracker.utils.FileUtils;
 import org.wet.world_event_tracker.utils.McUtils;
 import org.wet.world_event_tracker.utils.type.Prepend;
@@ -39,8 +35,8 @@ public class World_event_tracker implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("weTracker");
     public static FileUtils fileUtils = new FileUtils();
     public static String fileName = "config/WET/tracked.json";
-    public static JsonObject tracked;
-    public static File list;
+    public static JsonObject fileData;
+    public static File configFile;
     public static ModContainer MOD_CONTAINER;
     public static String MOD_VERSION;
     public static JsonObject secrets;
@@ -67,22 +63,31 @@ public class World_event_tracker implements ClientModInitializer {
             MOD_VERSION = MOD_CONTAINER.getMetadata().getVersion().getFriendlyString();
         }
 
-        if ((list = new File(fileName)).exists()) {
+        if ((configFile = new File(fileName)).exists()) {
             try {
-                String tracking = fileUtils.readFile(list);
-                tracked = new JsonParser().parse(tracking).getAsJsonObject();
+                String configs = fileUtils.readFile(configFile);
+                fileData = new JsonParser().parse(configs).getAsJsonObject();
+                if (!fileData.has("settings")){
+                    JsonObject settings = new JsonObject();
+                    settings.add("sound", new JsonPrimitive(true));
+                    fileData.add("settings", settings);
+                }
+                fileUtils.writeFile(configFile, fileData.toString());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
         else {
             try {
-                list = fileUtils.createFile(fileName);
+                configFile = fileUtils.createFile(fileName);
                 var obj = new JsonObject();
-                JsonArray initFile = new JsonArray();
-                obj.add("events", initFile);
-                fileUtils.writeFile(list,obj.toString());
-                tracked = obj;
+                JsonArray initEvents = new JsonArray();
+                JsonObject initSettings = new JsonObject();
+                initSettings.add("sound", new JsonPrimitive(true));
+                obj.add("events", initEvents);
+                obj.add("settings", initSettings);
+                fileUtils.writeFile(configFile,obj.toString());
+                fileData = obj;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -109,15 +114,70 @@ public class World_event_tracker implements ClientModInitializer {
                     World_event_tracker.BASE_COMMAND.then(
                             ClientCommandManager.literal("list")
                                     .executes(context -> {
-                                        JsonArray eventList = tracked.get("events").getAsJsonArray();
+                                        JsonArray eventList = fileData.get("events").getAsJsonArray();
                                         StringBuilder eventString = new StringBuilder();
                                         for (JsonElement event : eventList) {
-                                            eventString.append(event.toString()).append(", ");
+                                            eventString.append(event.getAsString()).append(", ");
                                         }
-                                        eventString.setLength(eventString.length() - 2);
-                                        McUtils.sendLocalMessage(Text.literal("§aYou are tracking: " + eventString), Prepend.DEFAULT.get(), false);
+                                        if (!eventString.toString().isEmpty()) {
+                                            eventString.setLength(eventString.length() - 2);
+                                            McUtils.sendLocalMessage(Text.literal("§aYou are tracking: " + eventString), Prepend.DEFAULT.get(), false);
+                                            return Command.SINGLE_SUCCESS;
+                                        }
+                                        McUtils.sendLocalMessage(Text.literal("§aYou are not tracking anything, add some events to your list and get tracking!"), Prepend.DEFAULT.get(), false);
                                         return Command.SINGLE_SUCCESS;
                                     })));
+        });
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->{
+            dispatcher.register(
+                    World_event_tracker.BASE_COMMAND.then(
+                            ClientCommandManager.literal("toggle").then(
+                                    ClientCommandManager.literal("sound")
+                                    .executes(context -> {
+                                        JsonObject settings = fileData.get("settings").getAsJsonObject();
+                                        if (settings.get("sound") == null) {
+                                            try {
+                                                settings.add("sound", new JsonPrimitive(true));
+                                                fileData.remove("settings");
+                                                fileData.add("settings", settings);
+                                                fileUtils.writeFile(configFile, fileData.toString());
+                                                McUtils.sendLocalMessage(Text.literal("§aSound effects set to ON"), Prepend.DEFAULT.get(), false);
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            return Command.SINGLE_SUCCESS;
+                                        }
+                                        if(settings.get("sound").getAsBoolean()){
+                                            try {
+                                                settings.remove("sound");
+                                                settings.add("sound", new JsonPrimitive(false));
+                                                fileData.remove("settings");
+                                                fileData.add("settings", settings);
+                                                fileUtils.writeFile(configFile, fileData.toString());
+                                                McUtils.sendLocalMessage(Text.literal("§aSound effects set to OFF"), Prepend.DEFAULT.get(), false);
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            return Command.SINGLE_SUCCESS;
+                                        }
+                                        else {
+                                            try {
+                                                settings.remove("sound");
+                                                settings.add("sound", new JsonPrimitive(true));
+                                                fileData.remove("settings");
+                                                fileData.add("settings", settings);
+                                                fileUtils.writeFile(configFile, fileData.toString());
+                                                McUtils.sendLocalMessage(Text.literal("§aSound effects set to ON"), Prepend.DEFAULT.get(), false);
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            return Command.SINGLE_SUCCESS;
+                                        }
+                                    })
+                            )
+                    )
+            );
         });
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -135,14 +195,16 @@ public class World_event_tracker implements ClientModInitializer {
                     "MaarAshpit", "ShatteredRoosts", "AhmsMonuments", "IncomprehensibleCynosure", "ShapesintheDark", "AllEyesonMe",
                     "MonumenttoLoss", "PestilentialDownpour", "OtherworldlyExhibition", "SwamplandSquabble", "AutumnPoachers",
                     "StackpeakPinnacle", "KaroshiUnion", "SteelSkirmish", "BiohazardousBloom", "Tree-TopCradle", "ApiaryHive", "FossilFighters",
-                    "GlacialTraining", "PatrollingSoldiers", "MoleMeet-Up", "CitadelBarracks", "RoyalAlchemists", "PalaceGuards"
+                    "GlacialTraining", "PatrollingSoldiers", "MoleMeet-Up", "CitadelBarracks", "RoyalAlchemists", "PalaceGuards",
+                    "RestingGrounds"
             };
             dispatcher.register(World_event_tracker.BASE_COMMAND.then(ClientCommandManager.literal("untrack").then(ClientCommandManager.literal("all").executes(context -> {
                 var obj = new JsonObject();
                 JsonArray initFile = new JsonArray();
-                obj.add("events", initFile);
+                fileData.remove("events");
+                fileData.add("events", initFile);
                 try {
-                    fileUtils.writeFile(list,obj.toString());
+                    fileUtils.writeFile(configFile,fileData.toString());
                     McUtils.sendLocalMessage(Text.literal("§aSuccessfully deregistered from ALL events."), Prepend.DEFAULT.get(), false);
                 } catch (IOException e) {
                     McUtils.sendLocalMessage(Text.literal("§cUnable to be deregistered from ALL events."), Prepend.DEFAULT.get(), false);
@@ -155,10 +217,10 @@ public class World_event_tracker implements ClientModInitializer {
                 for (String event : allowedEvents){
                     eventList.add(event);
                 }
-                tracked.remove("events");
-                tracked.add("events", eventList);
+                fileData.remove("events");
+                fileData.add("events", eventList);
                 try {
-                    fileUtils.writeFile(list, tracked.toString());
+                    fileUtils.writeFile(configFile, fileData.toString());
                     McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for ALL events."), Prepend.DEFAULT.get(), false);
                 } catch (IOException e) {
                     McUtils.sendLocalMessage(Text.literal("§cUnable to init for ALL events."), Prepend.DEFAULT.get(), false);
@@ -176,13 +238,13 @@ public class World_event_tracker implements ClientModInitializer {
                                 String event = StringArgumentType.getString(context, "world_event");
                                 if (event.equals("RuffTumble")) event = "Ruff&Tumble";
                                 JsonElement jsonEvent = new JsonParser().parse(event);
-                                if (tracked.getAsJsonArray("events").contains(jsonEvent)) {
+                                if (fileData.getAsJsonArray("events").contains(jsonEvent)) {
                                     McUtils.sendLocalMessage(Text.literal("§cYou were already registered for the " + event + "."), Prepend.DEFAULT.get(), false);
                                     return Command.SINGLE_SUCCESS;
                                 }
-                                tracked.getAsJsonArray("events").add(event); //errors maybe?
+                                fileData.getAsJsonArray("events").add(event); //errors maybe?
                                 try {
-                                    fileUtils.writeFile(list, tracked.toString());
+                                    fileUtils.writeFile(configFile, fileData.toString());
                                     McUtils.sendLocalMessage(Text.literal("§aSuccessfully registered for the " + event + "."), Prepend.DEFAULT.get(), false);
                                 } catch (IOException e) {
                                     McUtils.sendLocalMessage(Text.literal("§cUnable to init for the " + event + "."), Prepend.DEFAULT.get(), false);
@@ -198,9 +260,9 @@ public class World_event_tracker implements ClientModInitializer {
                                 String event = StringArgumentType.getString(context, "world_event");
                                 if (event.equals("RuffTumble")) event = "Ruff&Tumble";
                                 JsonElement jsonEvent = new JsonParser().parse(event);
-                                tracked.getAsJsonArray("events").remove(jsonEvent); //errors maybe?
+                                fileData.getAsJsonArray("events").remove(jsonEvent); //errors maybe?
                                 try {
-                                    fileUtils.writeFile(list, tracked.toString());
+                                    fileUtils.writeFile(configFile, fileData.toString());
                                     McUtils.sendLocalMessage(Text.literal("§aSuccessfully deregistered for the " + event + "."), Prepend.DEFAULT.get(), false);
                                 } catch (IOException e) {
                                     McUtils.sendLocalMessage(Text.literal("§cUnable to deregister for the " + event + "."), Prepend.DEFAULT.get(), false);

@@ -48,7 +48,7 @@ public class AutoUpdateApi extends Api {
             HttpClient client = HttpClient.newHttpClient();
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {
-                        String latest = JsonUtils.toJsonObject(response.body()).get("versionNumber").toString();
+                        String latest = JsonUtils.toJsonObject(response.body()).get("versionNumber").getAsString();
                         if (!(latest.equals(World_event_tracker.MOD_VERSION))){
                             World_event_tracker.LOGGER.warn("outdated version: {}", World_event_tracker.MOD_VERSION);
                             MinecraftClient.getInstance().execute( ()-> {

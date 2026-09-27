@@ -11,8 +11,6 @@ public abstract class Api {
     private boolean enabled = false;
     private int missingDeps;
 
-    // TODO move api get posts here
-    // TODO improve dependencies system to show which dependencies specifically are unloaded to ensure no duplications
     protected Api(String name, List<Class<? extends Api>> dependencies) {
         this.name = name;
         this.dependencies = dependencies;

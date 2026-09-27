@@ -8,3 +8,6 @@ build/*
 run/
 src/main/resources/WEsecrets.json
 logs
+World Event Tracker_client.launch
+World Event Tracker_datagen.launch
+World Event Tracker_server.launch

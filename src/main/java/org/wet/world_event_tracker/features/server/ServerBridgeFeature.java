@@ -20,6 +20,8 @@ import org.wet.world_event_tracker.utils.type.Prepend;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.wet.world_event_tracker.World_event_tracker.fileData;
+
 
 public class ServerBridgeFeature extends Feature {
     private final Pattern WE_PATTERN = Pattern.compile("^§0((\uDAFF\uDFFC\uE00D\uDAFF\uDFFF\uE002\uDAFF\uDFFE)|(\uDAFF\uDFFC\uE001\uDB00\uDC06))§0 §0The (?<worldevent>.+)+ World Event starts in (?<time>.+)+!");
@@ -32,6 +34,9 @@ public class ServerBridgeFeature extends Feature {
         ChatMessageReceived.EVENT.register(this::onWynnMessage);
         S2CServerEvents.MESSAGE.register(this::onServerMessage);
     }
+
+    //TODO: blood encrusted mastaba has formatting between the minutes and seconds causing it to return the seconds part as
+    // black color code formatted, try fix this before next release.
 
     private void onWynnMessage(Text message) {
         String m = TextUtils.parseStyled(message, TextParseOptions.DEFAULT.withExtractUsernames(true));
@@ -66,7 +71,7 @@ public class ServerBridgeFeature extends Feature {
 
                 MinecraftClient client = MinecraftClient.getInstance();
 
-                if (client.player != null) {
+                if (client.player != null && fileData.get("settings").getAsJsonObject().get("sound").getAsBoolean()) {
                     client.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
                 }
             } catch (Exception e) {

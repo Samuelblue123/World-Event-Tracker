@@ -142,6 +142,7 @@ public class SocketIOClient extends Api {
         });
         serverSocket.on("serverMessage", args -> {
             World_event_tracker.LOGGER.info("received notif {}", args[0].toString());
+
             S2CServerEvents.MESSAGE.invoker().interact(args[0]);
         });
         WorldStateEvents.CHANGE.register(this::worldStateChanged);
